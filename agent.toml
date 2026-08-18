@@ -1,0 +1,159 @@
+# =============================================================================
+# package-avail — replication-package availability agent (Batch 2)
+# =============================================================================
+# Per-article loop rebuilt as SIX specialized agents so no single agent carries
+# a bloated context. Each agent has one job, a small toolset, and hands a small
+# structured result to the next. Skills NOT listed here are IGNORED.
+#
+# Flow:  1 Downloading → 2 Preparation → (NA? stop) → 3 Locating →
+#        4 Loc-Verification (↺ 3→ max 3) → 5 Execution →
+#        6 Exec-Verification (↺ 5→ max 3) → write row
+#
+# Output table: artifacts/input/Borun_batch_2.xlsx (sheet "Borun").
+# Columns filled: in_scope, qualitative, data, code, package_location,
+# path_to_package, coverage_checked, notes. (data+code / neither are xlsx
+# FORMULAS — never written by an agent.) A note is REQUIRED on every row.
+# =============================================================================
+
+[agent]
+name        = "package-avail"
+version     = "2.0.0"
+model       = "claude-opus-4-8"
+goal        = "For each article, decide if it is in scope, then find & verify whether the authors deposited data and/or code — recording a calibrated, evidence-backed row."
+
+[agent.io]
+articles    = "artifacts/input/Borun_batch_2.xlsx"          # input + output table (sheet "Borun")
+codebook    = "artifacts/input/Borun_batch_2.xlsx"          # sheet "how_to_code" is authoritative
+skills_dir  = "artifacts/skills/"
+scratch_dir = "artifacts/output/package_avai/_scratch/"
+
+# Binding codebook rules (from the how_to_code sheet — authoritative):
+#  in_scope    Y  = paper reports a quantitative result the AUTHORS computed themselves
+#              NA = nothing to reproduce (not a failure to deposit)
+#              ?  = does not fit the codebook — flag and say why
+#  qualitative Y  = primary evidence is non-numeric (interviews/ethnography/archival/textual),
+#                   interpreted directly; BOTH qual+quant → coded N (quantitative)
+#  data        Y  = authors DEPOSITED their analysis dataset (a citation to a public source /
+#                   ICPSR series / survey archive is a SOURCE, not a deposit → N)
+#  code        Y  = authors deposited the code that produces the paper's results
+#  RULES: (1) a Y means the AUTHORS' materials reproduce THIS paper, not just a relevant link;
+#         (2) a general-purpose tool the authors used is a dependency, not a deposit;
+#         (3) a preprint of the article is not a replication package;
+#         (4) confirm a repo/OSF node belongs to THIS paper by THESE authors;
+#         (5) every row gets a note — a Y with no note is a guess;
+#         (6) genre does not decide status — a comment can have a full package.
+
+# =============================================================================
+# 1. DOWNLOADING AGENT
+# =============================================================================
+[agents.downloading]
+job     = "Download the article PDF to scratch_dir/<paper_id>/ before anything else."
+input   = "{paper_id, article_url}"
+tools   = ["fetch_url", "read_pdf", "download"]
+output  = "{pdf_path}"
+
+# =============================================================================
+# 2. PREPARATION AGENT  (scope gate — reworked observable-signal triage)
+# =============================================================================
+[agents.preparation]
+job     = """
+Read the ABSTRACT tab at article_url and decide scope BEFORE any package search:
+  • qualitative = Y if primary evidence is non-numeric (interviews/ethnography/archival/textual)
+    interpreted directly; papers using BOTH qual and quant data are coded N (quantitative).
+  • in_scope = Y if the paper reports a quantitative result the authors COMPUTED THEMSELVES
+    (a table, figure, coefficient, or statistic they produced); NA if there is nothing to
+    reproduce (pure commentary/debate prose with no new numbers, or qualitative-only). Use ? only
+    if it does not fit the codebook — and say why.
+  • DO NOT judge empirical-vs-not by title alone (a 'Comment' can compute its own results — SS063).
+"""
+input   = "{paper_id, title, article_url}"
+tools   = ["fetch_url", "read_pdf"]
+output  = "{in_scope: Y|NA|?, qualitative: Y|N, reason, coverage_checked}"
+gate    = "If in_scope = NA → write the row (data/code blank, note the reason) and STOP. Skip agents 3–6."
+
+# =============================================================================
+# 3. LOCATING AGENT
+# =============================================================================
+[agents.locating]
+job     = "Locate the replication package; fill package_location + path_to_package."
+skills  = [
+  "journal-reproducibility-package",     # SUPPLEMENTAL MATERIAL tab — CHECK FIRST
+  "article-pdf-availability-statement",  # PDF availability statement/footnote — fallback
+  "author-homepage",                     # personal/departmental pages
+]
+input   = "{paper_id, title, authors, article_url, pdf_path}"
+tools   = ["fetch_url", "read_pdf", "web_search"]
+output  = "{package_location, path_to_package, coverage_checked}"
+note    = "Order: supplemental tab → PDF statement → author homepage. A bare OSF/DOI in the PDF is the package ONLY if the text says 'replication package/material'; else it is a citation."
+
+# =============================================================================
+# 4. LOC-VERIFICATION AGENT
+# =============================================================================
+[agents.loc_verification]
+job     = "Confirm the located package is real before Execution reads it."
+checks  = [
+  "liveness: resolve path_to_package → live (http 200) | dead | auth-walled",
+  "content:  open the file tree + README → real package | manuscript-only | empty",
+]
+input   = "{package_location, path_to_package}"
+tools   = ["fetch_url", "download", "list_tree"]
+iterate = "If dead / auth-walled OR manuscript-only / empty → send back to LOCATING for new leads. Max 3 iterations, then flag needs_review and stop."
+output  = "{live: bool, is_package: bool, tree, readme_text}"
+
+# =============================================================================
+# 5. EXECUTION AGENT
+# =============================================================================
+[agents.execution]
+job     = "Determine data & code availability AND the data-access gate; fill data (Y/N), code (Y/N), data_gated (Y/N), data_source/apply_at."
+skills  = [
+  "github-repository-and-pages",
+  "osf-repository",
+  "data-repository",
+]
+input   = "{paper_id, package_location, tree, readme_text}"
+tools   = ["fetch_url", "github", "download", "list_tree", "read_pdf"]
+output  = "{data: Y|N, code: Y|N, data_gated: Y|N, data_source: string, notes}"
+note    = """
+  data = Y only if the AUTHORS deposited their analysis dataset (a link to a public source /
+         ICPSR / survey archive is a data SOURCE, not a deposit → N).
+  code = Y only if the authors deposited the code that produces the paper's results.
+  data_gated = Y when the underlying analysis data is RESTRICTED — proprietary, IRB/confidential,
+    registration/DUA/application-required, or a restricted register/administrative source — EVEN IF
+    the code (and sometimes derived data) is deposited. Free public data (public IPUMS/GSS/NLSY) → N.
+    Also Y when data=N specifically because the source is restricted.
+  data_source = when data_gated=Y, NAME the restricted source AND where/how to apply (the apply_at:
+    the provider + URL/agreement, e.g. "SOEP Core — data-access agreement, DIW Berlin diw.de/soep";
+    "Census FSRDC census.gov/fsrdc"; "confidential interviews — contact author"). Blank when data_gated=N.
+  Gated data/code (DUA/registration/CAPTCHA): the located package still counts — record apply_at,
+  never sign/register/log in. (data+code / neither are xlsx formulas — do not fill.)
+"""
+
+# =============================================================================
+# 6. EXEC-VERIFICATION AGENT
+# =============================================================================
+[agents.exec_verification]
+job     = "Confirm the detected data & code actually exist AND belong to THIS paper, AND verify the data_gated flag + apply_at."
+checks  = [
+  "provenance: repo/node owner is an author AND README/title cites THIS paper (RULE 4)",
+  "the files backing each Y are really present in the tree (not inferred from README)",
+  "not a general-purpose tool/dependency (RULE 2) and not a preprint (RULE 3)",
+  "data_gated: independently confirm whether the underlying data is restricted (proprietary/IRB/DUA/registration/register); correct Y↔N if the execute agent over- or under-called it (do NOT flag a free public source as gated)",
+  "data_source/apply_at: confirm the named source is correct and that a concrete apply-at (provider + URL/agreement) is given when data_gated=Y; fill or fix it if missing/wrong",
+]
+input   = "{paper_id, title, authors, package_location, tree, readme_text, data, code, data_gated, data_source}"
+tools   = ["fetch_url", "github", "read_pdf"]
+iterate = "If the data or code does NOT belong to this paper → send back to EXECUTION. Max 3 iterations, then flag needs_review and stop."
+output  = "{data_confirmed: Y|N, code_confirmed: Y|N, data_gated: Y|N, data_source: string, provenance, notes}"
+
+# =============================================================================
+# ROW WRITER  (after the loop, or immediately on an NA scope-gate)
+# =============================================================================
+[write]
+target  = "artifacts/output/package_avai/Borun_batch_3_result.xlsx  (sheet 'Borun')  # input xlsx stays pristine"
+columns = [
+  "submission_date", "in_scope", "qualitative", "data", "code",
+  "data_gated", "data_source / apply_at",
+  "package_location", "path_to_package", "coverage_checked", "notes",
+]
+never   = "data+code, neither  (spreadsheet formulas — leave untouched)"
+require = "notes on EVERY row (RULE 5). data_source/apply_at REQUIRED whenever data_gated=Y (set by Execute, verified by Exec-Verify). Process in groups; stop after each for manual review."
