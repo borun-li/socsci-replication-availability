@@ -50,12 +50,10 @@ socsci-replication-availability/
 ├── README.md
 ├── LICENSE                      # MIT (code) + CC BY 4.0 (data)
 ├── agent.toml                   # the six-agent specification (references skills/)
-├── skills/                      # source-based search skills the agents load
-│   ├── osf-repository/ · data-repository/ · github-repository-and-pages/
-│   ├── journal-reproducibility-package/ · article-pdf-availability-statement/
-│   ├── author-homepage/ · project-or-lab-site/ · google-scholar-profile/
-│   ├── calibration-honesty/               # honesty/uncertainty discipline
-│   └── _verdict/                          # the coding verdicts (both-available, data-only, …)
+├── skills/                      # the 6 search skills agent.toml loads
+│   ├── journal-reproducibility-package/   # Locate: supplemental-material tab (checked first)
+│   ├── article-pdf-availability-statement/ · author-homepage/
+│   └── github-repository-and-pages/ · osf-repository/ · data-repository/  # Execute
 ├── data/
 │   ├── socsci_all_v3.xlsx       # the full dataset (413 rows)
 │   ├── socsci_all_v3.csv        # same, CSV
