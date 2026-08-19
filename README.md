@@ -108,8 +108,13 @@ Key definitions:
 | **Scenario 1** — look up packages (`lookup.py`) | **Python 3** — nothing else |
 | Verify the published numbers (`reproduce_table.py`) | **Python 3** — nothing else |
 | Regenerate the chart | Python 3 + `pip install matplotlib` |
-| **Scenario 2** — independently re-code the articles | Python 3 **and** [Claude Code](https://claude.com/claude-code) with API access (an Anthropic API key or a Claude subscription) + an internet connection |
-| **Scenario 3** — add & code a new article | Step 1 (auto-fill Block A): Python 3 + internet, no API key. Step 2 (code Block B): Claude Code with API access |
+| **Scenario 2** — independently re-code the articles | Python 3 **and** [Claude Code](https://claude.com/claude-code) with **your own** API access (your Anthropic API key or Claude subscription) + an internet connection |
+| **Scenario 3** — add & code a new article | Step 1 (auto-fill Block A): Python 3 + internet, no API key. Step 2 (code Block B): Claude Code with **your own** API access |
+
+> Reproducing (Scenarios 2 & 3) runs on **your own** Claude Code account — your API key or Claude
+> subscription. Nothing routes through the author, and there is no shared key or server to call.
+> (The `mailto` in the fetch scripts is only Crossref's optional politeness identifier — not a
+> credential; set `CROSSREF_MAILTO=you@example.com` to use your own, or leave it unset.)
 
 `git` is optional — you can download the repo as a ZIP instead. Everything except Scenario 2 is
 standard-library Python: no `pip install`, no API key, no account.

@@ -6,7 +6,11 @@ Block B: in_scope, qualitative, data, code, data_and_code, neither, data_gated,
          data_source_apply_at, package_location, path_to_package, coverage_checked, notes
 data_and_code / neither are computed here (pipeline code, never an agent judgment).
 """
-import sys, json, re, urllib.request, urllib.parse, openpyxl
+import sys, json, re, os, urllib.request, urllib.parse, openpyxl
+
+# Crossref politeness identifier (optional): set CROSSREF_MAILTO to your own email; blank = anonymous.
+_MAILTO = os.environ.get('CROSSREF_MAILTO', '').strip()
+UA = 'socsci-availability/1.0' + (f' (mailto:{_MAILTO})' if _MAILTO else '')
 
 def find_rows(o):
     if isinstance(o, list) and o and isinstance(o[0], dict) and 'paper_id' in o[0]:
@@ -25,7 +29,7 @@ def crossref_doi(title, want="Sociological Science"):
     if title in _doi_cache: return _doi_cache[title]
     q = urllib.parse.urlencode({'query.bibliographic': title, 'rows': 5})
     req = urllib.request.Request(f"https://api.crossref.org/works?{q}",
-          headers={'User-Agent': 'socsci-availability/1.0 (mailto:liborun0811@gmail.com)'})
+          headers={'User-Agent': UA})
     doi = ''
     try:
         d = json.load(urllib.request.urlopen(req, timeout=25))

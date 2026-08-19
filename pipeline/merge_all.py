@@ -3,7 +3,11 @@
 b1,b2,b4,b5 = canonical schema; b3 = 18-col batch-3 schema (mapped + DOI fetched from Crossref).
 Output: socsci_availability.xlsx (sheet 'availability'), sorted by paper_id, + a 'batch' column.
 """
-import openpyxl, re, urllib.request, urllib.parse, json, sys, time
+import openpyxl, re, os, urllib.request, urllib.parse, json, sys, time
+
+# Crossref politeness identifier (optional): set CROSSREF_MAILTO to your own email; blank = anonymous.
+_MAILTO=os.environ.get('CROSSREF_MAILTO','').strip()
+UA='socsci-availability/1.0'+(f' (mailto:{_MAILTO})' if _MAILTO else '')
 
 BASE='artifacts/output/package_avai'
 CANON=['doi','paper_id','title','authors','published_date','submission_date','article_url',
@@ -22,7 +26,7 @@ def crossref_doi(title):
     if title in _doi_cache: return _doi_cache[title]
     q=urllib.parse.urlencode({'query.bibliographic':title,'rows':5})
     req=urllib.request.Request(f"https://api.crossref.org/works?{q}",
-        headers={'User-Agent':'socsci-availability/1.0 (mailto:liborun0811@gmail.com)'})
+        headers={'User-Agent': UA})
     doi=''
     try:
         d=json.load(urllib.request.urlopen(req,timeout=25))

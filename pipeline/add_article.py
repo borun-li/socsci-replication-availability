@@ -28,7 +28,10 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, os.pardir, "data")
 DATASET = os.path.join(DATA, "socsci_availability.csv")
-UA = {"User-Agent": "socsci-availability/1.0 (mailto:liborun0811@gmail.com)"}
+# Crossref politeness identifier (optional). Set CROSSREF_MAILTO to your own email to join
+# Crossref's "polite pool"; left blank it requests anonymously. Never a personal default.
+_MAILTO = os.environ.get("CROSSREF_MAILTO", "").strip()
+UA = {"User-Agent": "socsci-availability/1.0" + (f" (mailto:{_MAILTO})" if _MAILTO else "")}
 
 BLOCK_A = ["doi", "paper_id", "title", "authors", "published_date", "submission_date", "article_url"]
 BLOCK_B = ["in_scope", "qualitative", "data", "code", "data_and_code", "neither", "data_gated",
