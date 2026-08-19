@@ -67,6 +67,7 @@ socsci-replication-availability/
 └── pipeline/
     ├── check_install.py           # confirm Python + dataset are ready
     ├── lookup.py                  # look up a package by DOI/URL/id  ← start here
+    ├── add_article.py             # add a new article by URL/DOI (auto-fills Block A)
     ├── reproduce_table.py         # recompute the headline numbers from the dataset
     ├── six-agent-availability.js  # main coding pipeline (Claude Code Workflow script)
     ├── gated_recheck.js           # data_gated determiner
@@ -107,6 +108,7 @@ Key definitions:
 | Verify the published numbers (`reproduce_table.py`) | **Python 3** — nothing else |
 | Regenerate the chart | Python 3 + `pip install matplotlib` |
 | **Scenario 2** — independently re-code the articles | Python 3 **and** [Claude Code](https://claude.com/claude-code) with API access (an Anthropic API key or a Claude subscription) + an internet connection |
+| **Scenario 3** — add & code a new article | Step 1 (auto-fill Block A): Python 3 + internet, no API key. Step 2 (code Block B): Claude Code with API access |
 
 `git` is optional — you can download the repo as a ZIP instead. Everything except Scenario 2 is
 standard-library Python: no `pip install`, no API key, no account.
@@ -254,30 +256,38 @@ first.)
 
 ### Scenario 3 — code newly published articles (extend coverage)
 
-*Sociological Science* keeps publishing. To locate and code the replication package for **new**
-articles with the same workflow (also Claude Code — see [Prerequisites](#prerequisites)):
+*Sociological Science* keeps publishing. To add a new article and code its replication package
+with the same workflow — **you only type a URL or DOI; Block A is filled in for you**:
 
-**Step 1 — make a worklist for the new articles.** Create a CSV with the **same header** as
-`data/socsci_availability_blank.csv`, one row per new article. Fill only the bibliographic columns
-(`doi`, `paper_id`, `title`, `authors`, `published_date`, `submission_date`, `article_url`) and
-leave every coding column empty. `paper_id` can be any unique label (e.g. `SS512`). Save it as,
-say, `data/new_articles.csv`. (Tip: copy the header row out of the blank template to start.)
+**Step 1 — add the article (Block A is auto-filled).** Pass the article URL or DOI; the tool
+fetches the bibliographic metadata and appends a row to `data/new_articles.csv` with Block A
+filled (`doi`, `paper_id`, `title`, `authors`, `published_date`, `article_url`) and the coding
+columns left empty:
 
-**Step 2 — hand it to Claude Code.** In the repo folder run `claude`, then paste:
+```bash
+python3 pipeline/add_article.py https://sociologicalscience.com/articles-v11-17-467/
+python3 pipeline/add_article.py 10.15195/v11.a17               # a DOI works too
+python3 pipeline/add_article.py <url-or-doi> <url-or-doi> …    # several at once
+```
+
+`paper_id` is auto-assigned as the next `SSNNN`; `submission_date` is left blank — it is filled
+from the article's "Received" date during coding. This step needs an internet connection but no
+API key (Python only). No manual data entry.
+
+**Step 2 — code Block B with Claude Code.** In the repo folder run `claude`, then paste:
 
 > Read `agent.toml`, `docs/codebook.md`, and every `SKILL.md` under `skills/`. For each article in
-> `data/new_articles.csv` (bibliographic columns filled, coding columns empty), run the method
-> **Scope → Locate → Verify → Execute → Verify**: find the replication package (journal
-> supplemental tab, then the article-PDF availability statement, author homepage, then OSF /
-> Harvard Dataverse / GitHub / Zenodo), verify it belongs to these authors and reproduces this
-> paper, and fill the coding columns strictly per the codebook. Write the filled rows to
-> `data/new_articles_coded.csv`.
+> `data/new_articles.csv` (Block A filled, coding columns empty), run the method **Scope → Locate
+> → Verify → Execute → Verify**: find the replication package (journal supplemental tab, then the
+> article-PDF availability statement, author homepage, then OSF / Harvard Dataverse / GitHub /
+> Zenodo), verify it belongs to these authors and reproduces this paper, and fill the coding
+> columns strictly per the codebook (also fill `submission_date` from the article's "Received"
+> date). Write the filled rows back to `data/new_articles.csv`.
 
-**Step 3 — use or append the results.** Look them up with
-`python3 pipeline/lookup.py --file <your ids>`, or append the coded rows to
-`data/socsci_availability.csv` to grow the dataset. Use the pinned parameters in
-[`docs/run_provenance.md`](docs/run_provenance.md) so new coding stays consistent with the existing
-table.
+**Step 3 — use or append the results.** Look them up with `python3 pipeline/lookup.py --file …`,
+or append the coded rows to `data/socsci_availability.csv` to grow the dataset. Use the pinned
+parameters in [`docs/run_provenance.md`](docs/run_provenance.md) so new coding stays consistent
+with the existing table.
 
 ---
 
