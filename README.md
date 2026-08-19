@@ -33,7 +33,8 @@ Whole-corpus availability is 176 / 397 = 44.3% (held down by the pre-policy deca
 - [Description](#description)
 - [Repository structure](#repository-structure)
 - [The dataset](#the-dataset)
-- [Usage](#usage)
+- [Quick Start (install)](#quick-start-install)
+- [Using it](#using-it)
 - [Methodology & quality control](#methodology--quality-control)
 - [Reproducibility](#reproducibility)
 - [Citation](#citation)
@@ -62,12 +63,14 @@ socsci-replication-availability/
 │   ├── codebook.md              # coding manual (v3.2) — field definitions & rules
 │   └── run_provenance.md        # pinned run parameters (model, prompts, workflow)
 └── pipeline/
-    ├── six-agent-availability.js  # main pipeline: Scope→Locate→Verify→Execute→Verify
+    ├── lookup.py                  # look up one article's package by DOI/URL/id  ← start here
+    ├── reproduce_table.py         # recompute the availability table from the dataset
+    ├── six-agent-availability.js  # main coding pipeline (Claude Code Workflow script)
     ├── gated_recheck.js           # data_gated determiner (codebook v3.2)
     ├── gated_determination.js     # data_gated determiner (initial variant)
-    ├── write_v3.py                # write pipeline output into the v3 schema
-    ├── write_inplace.py           # fill coding into an existing v3 table
-    └── merge_all.py               # merge per-batch tables into the full dataset
+    ├── write_v3.py               # write pipeline output into the v3 schema
+    ├── write_inplace.py          # fill coding into an existing v3 table
+    └── merge_all.py              # merge per-batch tables into the full dataset
 ```
 
 ---
@@ -93,29 +96,98 @@ Key definitions:
 
 ---
 
-## Usage
+## Quick Start (install)
 
-**Look up one article** — open `data/socsci_all_v3.csv`, filter by `doi`, and read
-`data` / `code` / `package_location` to find and download its replication package.
+The two everyday tools — **look up a package** and **reproduce the table** — are plain Python
+scripts that read the shipped dataset. They need **only Python 3** (no `pip install`, no API key)
+and run the same on **macOS, Linux, and Windows**. (Re-coding articles *from scratch* is a
+separate, heavier path that needs Claude Code — see "From scratch" at the end.)
 
-**Analyse the corpus** (Python):
-
-```python
-import pandas as pd
-df = pd.read_csv("data/socsci_all_v3.csv")
-insc = df[df.in_scope == "Y"]
-avail = insc[(insc.data == "Y") | (insc.code == "Y")]
-print(len(avail) / len(insc))   # overall availability rate
-```
-
-**Re-run the coding pipeline.** The pipeline runs as a multi-agent workflow (see
-`pipeline/six-agent-availability.js` and `agent.toml`); parameters are pinned in
-[`docs/run_provenance.md`](docs/run_provenance.md). `pipeline/*.py` are the plain-Python
-writers/mergers and run with `openpyxl`:
+**Step 1 — make sure Python 3 is installed.** In a terminal:
 
 ```bash
-python3 pipeline/merge_all.py     # rebuild data/socsci_all_v3.xlsx from per-batch tables
+python3 --version
 ```
+
+You should see `Python 3.x.x`. If it says "command not found":
+- **macOS** — `brew install python`  (or install from <https://www.python.org/downloads/>)
+- **Ubuntu/Debian Linux** — `sudo apt update && sudo apt install -y python3`
+- **Windows** — install from <https://www.python.org/downloads/> and tick **"Add python.exe to
+  PATH"**; then use `python` instead of `python3` in the commands below (in PowerShell).
+
+**Step 2 — download this repository.**
+
+```bash
+git clone https://github.com/borun-li/socsci-replication-availability.git
+cd socsci-replication-availability
+```
+
+(No `git`? Use the green **Code → Download ZIP** button on GitHub, unzip it, and `cd` into the
+folder.)
+
+**Step 3 — confirm it works.** Run the reproduction tool:
+
+```bash
+python3 pipeline/reproduce_table.py
+```
+
+If you see the availability table print (ending with `submitted ON/AFTER 2023-04-01 : 113/119 =
+95.0%`), the install is good. You're done — nothing else to set up.
+
+---
+
+## Using it
+
+### Scenario 1 — find a paper's replication package (by DOI / URL / id)
+
+Type a DOI, the article URL, or the paper id into `lookup.py`; it prints whether data and code
+were deposited and the **exact repository link**:
+
+```bash
+python3 pipeline/lookup.py 10.15195/v1.a2
+python3 pipeline/lookup.py https://sociologicalscience.com/articles-v11-17-467/
+python3 pipeline/lookup.py SS510
+```
+
+Example output:
+
+```
+                   Paper : SS004
+          Data deposited : Y
+          Code deposited : Y
+     Replication package : https://osf.io/4g8f5/
+```
+
+Open the `Replication package` link to download the data/code. If a paper is **data access-gated**,
+the output includes a `How to obtain gated data` line (the restricted source + how to apply).
+Coverage is the **413 published Sociological Science articles (SS001–SS511)**; a DOI outside that
+set returns "No article matched".
+
+### Scenario 2 — reproduce the availability table
+
+Recompute every headline number (overall rate, by-year, and the policy before/after split)
+directly from the dataset — no arguments needed:
+
+```bash
+python3 pipeline/reproduce_table.py
+```
+
+This reads `data/socsci_all_v3.csv` and re-derives the figures in this README, so you can verify
+them yourself. To regenerate the **chart** (`data/availability_by_year.png`) as well, install
+matplotlib first (`pip install matplotlib`) — the numbers above need no extra packages.
+
+---
+
+### From scratch (re-code articles) — requires Claude Code
+
+The figures above come from a coded dataset; **producing that coding** is a multi-agent workflow,
+not a one-command script. `pipeline/six-agent-availability.js` and `gated_recheck.js` are **Claude
+Code Workflow scripts** (they call the agent-orchestration API and drive the `skills/` above), and
+`agent.toml` is their spec. Re-running them needs [Claude Code](https://claude.com/claude-code)
+with API access, and — per [`docs/run_provenance.md`](docs/run_provenance.md) — is inherently
+non-deterministic (the coding is model-generated). The `pipeline/*.py` files are the plain-Python
+writers/mergers that assemble the coded outputs into the final table. This path is for extending
+coverage or auditing the method, not for everyday use.
 
 ---
 
