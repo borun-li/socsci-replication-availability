@@ -14,7 +14,7 @@ Examples:
 DOI and paper_id match exactly (case-insensitive; a pasted doi.org/ or doi: prefix is
 stripped); article_url and package_location match by substring. Default output is a compact
 one-line-per-article table; --detail prints every field including the coding notes. Reads
-data/socsci_all_v3.csv — standard library only, no pip install.
+data/socsci_availability.csv — standard library only, no pip install.
 """
 import csv
 import os
@@ -22,7 +22,7 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CSV = os.path.join(HERE, os.pardir, "data", "socsci_all_v3.csv")
+CSV = os.path.join(HERE, os.pardir, "data", "socsci_availability.csv")
 
 DETAIL_FIELDS = [
     ("paper_id", "Paper"),

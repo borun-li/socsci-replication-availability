@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Merge the 5 SocSci availability tables into one canonical v3.2 archive.
 b1,b2,b4,b5 = canonical schema; b3 = 18-col batch-3 schema (mapped + DOI fetched from Crossref).
-Output: socsci_all_v3.xlsx (sheet 'availability'), sorted by paper_id, + a 'batch' column.
+Output: socsci_availability.xlsx (sheet 'availability'), sorted by paper_id, + a 'batch' column.
 """
 import openpyxl, re, urllib.request, urllib.parse, json, sys, time
 
@@ -74,7 +74,7 @@ def main():
     ws.append(cols)
     for r in rows: ws.append([r.get(k) for k in cols])
     ws.freeze_panes='A2'
-    out=f'{BASE}/socsci_all_v3.xlsx'
+    out=f'{BASE}/socsci_availability.xlsx'
     wb.save(out)
     # report
     b3doi=sum(1 for r in rows if r['batch']=='3' and r.get('doi'))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Write workflow output rows into a codebook v3.0 SocSci schema xlsx.
-Usage: write_v3.py <task_output.json> <existing_batchN_results.xlsx> <out_v3.xlsx>
+Usage: write_v3.py <task_output.json> <existing_batchN_results.xlsx> <out.xlsx>
 Block A (SocSci): doi, paper_id, title, authors, published_date, submission_date, article_url
 Block B: in_scope, qualitative, data, code, data_and_code, neither, data_gated,
          data_source_apply_at, package_location, path_to_package, coverage_checked, notes

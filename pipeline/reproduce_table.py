@@ -4,7 +4,7 @@
 Usage:
     python3 pipeline/reproduce_table.py
 
-Recomputes, from data/socsci_all_v3.csv, the same numbers reported in the README
+Recomputes, from data/socsci_availability.csv, the same numbers reported in the README
 and the professor email:
   - overall availability (data and/or code deposited) among in-scope articles,
   - availability by publication year,
@@ -21,7 +21,7 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CSV = os.path.join(HERE, os.pardir, "data", "socsci_all_v3.csv")
+CSV = os.path.join(HERE, os.pardir, "data", "socsci_availability.csv")
 POLICY = datetime.date(2023, 4, 1)
 
 

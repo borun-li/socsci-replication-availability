@@ -56,20 +56,21 @@ socsci-replication-availability/
 │   ├── article-pdf-availability-statement/ · author-homepage/
 │   └── github-repository-and-pages/ · osf-repository/ · data-repository/  # Execute
 ├── data/
-│   ├── socsci_all_v3.xlsx       # the full dataset (413 rows)
-│   ├── socsci_all_v3.csv        # same, CSV
-│   └── availability_by_year.png # the chart above
+│   ├── socsci_availability.xlsx        # the full coded dataset (413 rows)
+│   ├── socsci_availability.csv         # same, CSV
+│   ├── socsci_availability_blank.csv   # blank worklist for re-coding (Scenario 2)
+│   └── availability_by_year.png        # the chart above
 ├── docs/
-│   ├── codebook.md              # coding manual (v3.2) — field definitions & rules
+│   ├── codebook.md              # coding manual — field definitions & rules
 │   └── run_provenance.md        # pinned run parameters (model, prompts, workflow)
 └── pipeline/
-    ├── lookup.py                  # look up one article's package by DOI/URL/id  ← start here
-    ├── reproduce_table.py         # recompute the availability table from the dataset
+    ├── lookup.py                  # look up a package by DOI/URL/id  ← start here
+    ├── reproduce_table.py         # recompute the headline numbers from the dataset
     ├── six-agent-availability.js  # main coding pipeline (Claude Code Workflow script)
-    ├── gated_recheck.js           # data_gated determiner (codebook v3.2)
+    ├── gated_recheck.js           # data_gated determiner
     ├── gated_determination.js     # data_gated determiner (initial variant)
-    ├── write_v3.py               # write pipeline output into the v3 schema
-    ├── write_inplace.py          # fill coding into an existing v3 table
+    ├── write_table.py            # write pipeline output into the table schema
+    ├── write_inplace.py          # fill coding into an existing table
     └── merge_all.py              # merge per-batch tables into the full dataset
 ```
 
@@ -100,8 +101,8 @@ Key definitions:
 
 The two everyday tools — **look up a package** and **reproduce the table** — are plain Python
 scripts that read the shipped dataset. They need **only Python 3** (no `pip install`, no API key)
-and run the same on **macOS, Linux, and Windows**. (Re-coding articles *from scratch* is a
-separate, heavier path that needs Claude Code — see "From scratch" at the end.)
+and run the same on **macOS, Linux, and Windows**. (Independently *re-coding* the articles is a
+separate, heavier path that needs Claude Code — see Scenario 2.)
 
 **Step 1 — make sure Python 3 is installed.** In a terminal:
 
@@ -173,31 +174,35 @@ package link to download. For a **gated** paper with no open package the last co
 verification notes). Coverage is the **413 published articles (SS001–SS511)**; anything outside
 that set is listed under "not matched".
 
-### Scenario 2 — reproduce the availability table
+### Scenario 2 — reproduce the coding yourself (independent re-coding)
 
-Recompute every headline number (overall rate, by-year, and the policy before/after split)
-directly from the dataset — no arguments needed:
+This reproduces the **result** — you re-code the articles with the same method and compare against
+the shipped dataset — rather than re-printing numbers that are already filled in. Because the
+coding is produced by LLM agents, this path needs **[Claude Code](https://claude.com/claude-code)**
+(with API access) and yields a coding that is **comparable, not byte-identical** — the agents make
+judgment calls, so re-running does not return an exact copy (see
+[`docs/run_provenance.md`](docs/run_provenance.md)).
+
+1. **Start from the blank worklist** `data/socsci_availability_blank.csv`. It carries only the
+   bibliographic columns (`doi`, `paper_id`, `title`, `authors`, dates, `article_url`); every
+   coding column (`in_scope`, `data`, `code`, `data_gated`, …) is empty.
+2. **Re-code each article with the shipped method.** `agent.toml` is the six-agent spec, `skills/`
+   are the search skills, [`docs/codebook.md`](docs/codebook.md) is the rubric, and
+   `pipeline/six-agent-availability.js` + `gated_recheck.js` are the reference Claude Code Workflow
+   harness. Each article is scoped, its package located and verified, and its coding columns
+   filled in. (`pipeline/write_inplace.py` and `merge_all.py` assemble the filled rows into a table.)
+3. **Compare** your filled table against `data/socsci_availability.csv` to measure agreement.
+
+**Just want to check the published numbers?** To recompute the headline figures from the shipped
+(already-coded) dataset — without re-coding — run:
 
 ```bash
 python3 pipeline/reproduce_table.py
 ```
 
-This reads `data/socsci_all_v3.csv` and re-derives the figures in this README, so you can verify
-them yourself. To regenerate the **chart** (`data/availability_by_year.png`) as well, install
-matplotlib first (`pip install matplotlib`) — the numbers above need no extra packages.
-
----
-
-### From scratch (re-code articles) — requires Claude Code
-
-The figures above come from a coded dataset; **producing that coding** is a multi-agent workflow,
-not a one-command script. `pipeline/six-agent-availability.js` and `gated_recheck.js` are **Claude
-Code Workflow scripts** (they call the agent-orchestration API and drive the `skills/` above), and
-`agent.toml` is their spec. Re-running them needs [Claude Code](https://claude.com/claude-code)
-with API access, and — per [`docs/run_provenance.md`](docs/run_provenance.md) — is inherently
-non-deterministic (the coding is model-generated). The `pipeline/*.py` files are the plain-Python
-writers/mergers that assemble the coded outputs into the final table. This path is for extending
-coverage or auditing the method, not for everyday use.
+It re-derives the overall rate, the by-year table, and the policy before/after split from
+`data/socsci_availability.csv`, so you can verify them yourself. (To regenerate the chart as well,
+`pip install matplotlib` first.)
 
 ---
 
@@ -208,7 +213,7 @@ Each article passes through a five-stage multi-agent pipeline —
 channel (journal supplemental tab, article-PDF end-matter, supplement PDF, and repository APIs:
 OSF, Harvard Dataverse, GitHub, Zenodo, ICPSR …), and records what was actually inside the
 package. A separate determiner then decides `data_gated` and the application route for every
-in-scope paper, under the codebook v3.2 rule.
+in-scope paper, under the codebook rule.
 
 Quality control:
 - **Independent verification** — every positive finding is re-checked by a verifier agent for
@@ -255,7 +260,7 @@ published articles, or extensions to other journals. Please:
 
 1. Open an issue describing the article (`doi`) and the proposed change, with evidence
    (the repository link or the article's data-availability statement).
-2. For a coding change, keep the codebook v3.2 rules (see `docs/codebook.md`); note which rule applies.
+2. For a coding change, keep the codebook rules (see `docs/codebook.md`); note which rule applies.
 3. A companion **American Sociological Review (ASR)** adapter is planned, coding ASR under the
    **same codebook** so the two journals are directly comparable.
 
