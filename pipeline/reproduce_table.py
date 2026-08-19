@@ -2,7 +2,8 @@
 """Reproduce the replication-package-availability table from the shipped dataset.
 
 Usage:
-    python3 pipeline/reproduce_table.py
+    python3 pipeline/reproduce_table.py                 # the shipped dataset
+    python3 pipeline/reproduce_table.py data/my_recode.csv   # your own re-coded table (Scenario 2)
 
 Recomputes, from data/socsci_availability.csv, the same numbers reported in the README
 and the professor email:
@@ -45,17 +46,22 @@ def pct(a, n):
 
 
 def main() -> int:
-    if not os.path.exists(CSV):
-        print(f"ERROR: dataset not found at {CSV}", file=sys.stderr)
+    # optional: point at your own re-coded CSV (Scenario 2); default = the shipped dataset
+    path = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] not in ("-h", "--help") else CSV
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+    if not os.path.exists(path):
+        print(f"ERROR: dataset not found at {path}", file=sys.stderr)
         return 2
-    with open(CSV, newline="", encoding="utf-8") as f:
+    with open(path, newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
 
     insc = [r for r in rows if r.get("in_scope") == "Y"]
     avail = [r for r in insc if available(r)]
 
     print("Sociological Science — replication-package availability")
-    print(f"(recomputed from {os.path.basename(CSV)}: {len(rows)} articles total)\n")
+    print(f"(recomputed from {os.path.basename(path)}: {len(rows)} articles total)\n")
     print(f"In-scope empirical articles : {len(insc)}")
     print(f"Overall availability        : {pct(len(avail), len(insc))}")
     print(f"  data deposited={sum(1 for r in insc if str(r.get('data'))=='Y')}"

@@ -33,6 +33,7 @@ Whole-corpus availability is 176 / 397 = 44.3% (held down by the pre-policy deca
 - [Description](#description)
 - [Repository structure](#repository-structure)
 - [The dataset](#the-dataset)
+- [Prerequisites](#prerequisites)
 - [Quick Start (install)](#quick-start-install)
 - [Using it](#using-it)
 - [Methodology & quality control](#methodology--quality-control)
@@ -94,6 +95,20 @@ Key definitions:
 - **`code` = Y** — the authors deposited code that reproduces this paper's results.
 - **`data_gated` = Y** — the underlying data is not freely/publicly available (restricted / confidential / proprietary / register / IRB); `data_source_apply_at` records how to obtain it.
 - **`package_location`** — the actual deposit repository link (OSF / Harvard Dataverse / GitHub / Zenodo / ICPSR …).
+
+---
+
+## Prerequisites
+
+| To do this | You need |
+|---|---|
+| **Scenario 1** — look up packages (`lookup.py`) | **Python 3** — nothing else |
+| Verify the published numbers (`reproduce_table.py`) | **Python 3** — nothing else |
+| Regenerate the chart | Python 3 + `pip install matplotlib` |
+| **Scenario 2** — independently re-code the articles | Python 3 **and** [Claude Code](https://claude.com/claude-code) with API access (an Anthropic API key or a Claude subscription) + an internet connection |
+
+`git` is optional — you can download the repo as a ZIP instead. Everything except Scenario 2 is
+standard-library Python: no `pip install`, no API key, no account.
 
 ---
 
@@ -176,33 +191,63 @@ that set is listed under "not matched".
 
 ### Scenario 2 — reproduce the coding yourself (independent re-coding)
 
-This reproduces the **result** — you re-code the articles with the same method and compare against
-the shipped dataset — rather than re-printing numbers that are already filled in. Because the
-coding is produced by LLM agents, this path needs **[Claude Code](https://claude.com/claude-code)**
-(with API access) and yields a coding that is **comparable, not byte-identical** — the agents make
-judgment calls, so re-running does not return an exact copy (see
-[`docs/run_provenance.md`](docs/run_provenance.md)).
+This reproduces the **result**: you re-run the coding method over the articles and compare your
+table to the shipped one. It is driven by [Claude Code](https://claude.com/claude-code) — the
+method is an LLM-agent workflow, not a fixed script — so the output is **comparable, not
+byte-identical**: the agents make judgment calls, and re-running never returns an exact copy (see
+[`docs/run_provenance.md`](docs/run_provenance.md)). Expect many web requests and API-token cost;
+run it in batches. **Prerequisites:** Python 3 + Claude Code with API access
+(see [Prerequisites](#prerequisites)).
 
-1. **Start from the blank worklist** `data/socsci_availability_blank.csv`. It carries only the
-   bibliographic columns (`doi`, `paper_id`, `title`, `authors`, dates, `article_url`); every
-   coding column (`in_scope`, `data`, `code`, `data_gated`, …) is empty.
-2. **Re-code each article with the shipped method.** `agent.toml` is the six-agent spec, `skills/`
-   are the search skills, [`docs/codebook.md`](docs/codebook.md) is the rubric, and
-   `pipeline/six-agent-availability.js` + `gated_recheck.js` are the reference Claude Code Workflow
-   harness. Each article is scoped, its package located and verified, and its coding columns
-   filled in. (`pipeline/write_inplace.py` and `merge_all.py` assemble the filled rows into a table.)
-3. **Compare** your filled table against `data/socsci_availability.csv` to measure agreement.
+**Step 1 — clone the repo and open Claude Code inside it.**
 
-**Just want to check the published numbers?** To recompute the headline figures from the shipped
-(already-coded) dataset — without re-coding — run:
+```bash
+git clone https://github.com/borun-li/socsci-replication-availability.git
+cd socsci-replication-availability
+claude                      # starts Claude Code in this folder
+```
+
+**Step 2 — paste this prompt to Claude Code.** It points Claude at the method plus the blank
+worklist and tells it exactly what to produce:
+
+> Read `agent.toml` (the six-agent spec), `docs/codebook.md` (the coding rubric), and every
+> `SKILL.md` under `skills/`. Then process `data/socsci_availability_blank.csv` — it has the
+> bibliographic columns filled and the coding columns (`in_scope`, `qualitative`, `data`, `code`,
+> `data_gated`, `data_source_apply_at`, `package_location`, `notes`) empty. For each article, run
+> the method **Scope → Locate → Verify → Execute → Verify**: locate the replication package
+> (journal supplemental tab first, then the article-PDF availability statement, the author
+> homepage, then OSF / Harvard Dataverse / GitHub / Zenodo), verify it belongs to these authors
+> and reproduces this paper, and fill the coding columns strictly per the codebook. Work in
+> batches of ~20 articles and pause after each for me to review. Write the filled rows to
+> `data/my_recode.csv` with the same columns.
+
+*(Advanced — reuse the exact harness instead of free-form: ask Claude Code to run
+`pipeline/six-agent-availability.js` through its Workflow tool with the worklist rows as the input
+list, then `pipeline/gated_recheck.js` for `data_gated`, and `pipeline/write_inplace.py` /
+`merge_all.py` to assemble the table.)*
+
+**Step 3 — compare your coding to the shipped dataset.** Run the same summary over each file and
+check the headline numbers line up:
+
+```bash
+python3 pipeline/reproduce_table.py data/my_recode.csv            # your re-coding
+python3 pipeline/reproduce_table.py data/socsci_availability.csv  # the shipped dataset
+```
+
+For a row-by-row comparison, open both CSVs in a spreadsheet or `diff` them. Because the coding is
+model-generated, expect close-but-not-identical agreement, concentrated on borderline judgment calls.
+
+---
+
+**Shortcut — just verify the published numbers** (no re-coding, Python only):
 
 ```bash
 python3 pipeline/reproduce_table.py
 ```
 
-It re-derives the overall rate, the by-year table, and the policy before/after split from
-`data/socsci_availability.csv`, so you can verify them yourself. (To regenerate the chart as well,
-`pip install matplotlib` first.)
+It re-derives the overall rate, the by-year table, and the policy before/after split from the
+shipped `data/socsci_availability.csv`. (To regenerate the chart as well, `pip install matplotlib`
+first.)
 
 ---
 
