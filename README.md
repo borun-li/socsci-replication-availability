@@ -138,30 +138,40 @@ If you see the availability table print (ending with `submitted ON/AFTER 2023-04
 
 ## Using it
 
-### Scenario 1 — find a paper's replication package (by DOI / URL / id)
+### Scenario 1 — find replication packages (by DOI / URL / id)
 
-Type a DOI, the article URL, or the paper id into `lookup.py`; it prints whether data and code
-were deposited and the **exact repository link**:
+Pass a DOI, the article URL, or the paper id to `lookup.py`. It prints whether data and code
+were deposited and the **exact repository link**. **One or many** at once:
 
 ```bash
+# one article
 python3 pipeline/lookup.py 10.15195/v1.a2
 python3 pipeline/lookup.py https://sociologicalscience.com/articles-v11-17-467/
-python3 pipeline/lookup.py SS510
+
+# several at once — mix ids, DOIs, and URLs freely
+python3 pipeline/lookup.py SS004 SS510 SS458
+
+# a long list — one query per line in a text file (# starts a comment)
+python3 pipeline/lookup.py --file my_ids.txt
 ```
 
-Example output:
+Output is a compact one-line-per-article table:
 
 ```
-                   Paper : SS004
-          Data deposited : Y
-          Code deposited : Y
-     Replication package : https://osf.io/4g8f5/
+paper   scope data code gate  package / how to obtain
+----------------------------------------------------------------------------------------
+SS004   Y     Y    Y    N     https://osf.io/4g8f5/
+SS510   Y     N    Y    Y     https://osf.io/c34ta/
+SS458   Y     N    Y    Y     http://www.thomasleopold.eu
+
+3 article(s) found from 3 query(ies).
 ```
 
-Open the `Replication package` link to download the data/code. If a paper is **data access-gated**,
-the output includes a `How to obtain gated data` line (the restricted source + how to apply).
-Coverage is the **413 published Sociological Science articles (SS001–SS511)**; a DOI outside that
-set returns "No article matched".
+Columns: `scope` = in-scope, `data`/`code` = deposited?, `gate` = data access-gated? Open the
+package link to download. For a **gated** paper with no open package the last column shows
+`[gated] <how to apply>`. Add **`--detail`** for the full per-field view (title, authors, and the
+verification notes). Coverage is the **413 published articles (SS001–SS511)**; anything outside
+that set is listed under "not matched".
 
 ### Scenario 2 — reproduce the availability table
 

@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Look up a Sociological Science article's replication package by DOI or URL.
+"""Look up Sociological Science articles' replication packages by DOI / URL / paper id.
 
 Usage:
-    python3 pipeline/lookup.py <doi-or-url-or-fragment>
+    python3 pipeline/lookup.py <query> [<query> ...]    # one or more ids / DOIs / URLs
+    python3 pipeline/lookup.py --file ids.txt           # one query per line (# = comment)
+    python3 pipeline/lookup.py --detail <query> ...     # full per-field view (with notes)
 
 Examples:
-    python3 pipeline/lookup.py 10.15195/v11.a17
-    python3 pipeline/lookup.py sociologicalscience.com/articles-v11-17-467
-    python3 pipeline/lookup.py SS510
+    python3 pipeline/lookup.py SS004 SS510 10.15195/v1.a2
+    python3 pipeline/lookup.py --file my_ids.txt
+    python3 pipeline/lookup.py https://sociologicalscience.com/articles-v11-17-467/
 
-Matches (case-insensitive substring) against the doi, article_url,
-package_location, and paper_id columns of data/socsci_all_v3.csv, and prints
-the coding for every matching article. Standard library only — no pip install.
+DOI and paper_id match exactly (case-insensitive; a pasted doi.org/ or doi: prefix is
+stripped); article_url and package_location match by substring. Default output is a compact
+one-line-per-article table; --detail prints every field including the coding notes. Reads
+data/socsci_all_v3.csv — standard library only, no pip install.
 """
 import csv
 import os
@@ -21,7 +24,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSV = os.path.join(HERE, os.pardir, "data", "socsci_all_v3.csv")
 
-FIELDS = [
+DETAIL_FIELDS = [
     ("paper_id", "Paper"),
     ("title", "Title"),
     ("authors", "Authors"),
@@ -37,49 +40,125 @@ FIELDS = [
 ]
 
 
-def main() -> int:
-    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
-        print(__doc__)
-        return 0
-    raw = " ".join(sys.argv[1:]).strip().lower()
-    if not os.path.exists(CSV):
-        print(f"ERROR: dataset not found at {CSV}", file=sys.stderr)
-        return 2
+def norm_doi(q):
+    return re.sub(r"^(https?://)?(dx\.)?doi\.org/|^doi:\s*", "", q)
 
-    # normalise a pasted DOI: strip https://doi.org/ , doi.org/ , doi: prefixes
-    doi_q = re.sub(r"^(https?://)?(dx\.)?doi\.org/|^doi:\s*", "", raw)
 
-    with open(CSV, newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-
-    def matches(r):
-        # DOI and paper_id are identifiers → exact match (avoids v1.a2 hitting v1.a20)
+def find(rows, query):
+    """Return every article matching one query (DOI/id exact, URL substring)."""
+    raw = query.strip().lower()
+    if not raw:
+        return []
+    doi_q = norm_doi(raw)
+    out = []
+    for r in rows:
         if (r.get("doi") or "").strip().lower() == doi_q:
-            return True
-        if (r.get("paper_id") or "").strip().lower() == raw:
-            return True
-        # URLs are pasted partially → substring
-        return any(raw in (r.get(c) or "").lower()
-                   for c in ("article_url", "package_location"))
+            out.append(r)
+        elif (r.get("paper_id") or "").strip().lower() == raw:
+            out.append(r)
+        elif any(raw in (r.get(c) or "").lower()
+                 for c in ("article_url", "package_location")):
+            out.append(r)
+    return out
 
-    hits = [r for r in rows if matches(r)]
 
-    if not hits:
-        print(f'No article matched "{sys.argv[1]}".')
-        print("Try a DOI (10.15195/v…), the article URL, or a paper id (SSNNN).")
-        print("Note: only the 413 published Sociological Science articles "
-              "(SS001–SS511) are covered by this dataset.")
-        return 1
+def route(r):
+    """The 'package / how to obtain' cell for the compact table."""
+    pkg = (r.get("package_location") or "").strip()
+    if pkg:
+        return pkg
+    if str(r.get("data_gated")) == "Y":
+        ap = (r.get("data_source_apply_at") or "").strip()
+        return "[gated] " + (ap or "restricted — see --detail notes")
+    return "—"
 
+
+def print_compact(hits):
+    hdr = f'{"paper":<7} {"scope":<5} {"data":<4} {"code":<4} {"gate":<4}  package / how to obtain'
+    print(hdr)
+    print("-" * 88)
+    for r in hits:
+        rt = route(r)
+        if len(rt) > 66:
+            rt = rt[:63] + "..."
+        print(f'{r.get("paper_id") or "":<7} {r.get("in_scope") or "":<5} '
+              f'{r.get("data") or "":<4} {r.get("code") or "":<4} '
+              f'{r.get("data_gated") or "":<4}  {rt}')
+
+
+def print_detail(hits):
     for r in hits:
         print("=" * 72)
-        for key, label in FIELDS:
+        for key, label in DETAIL_FIELDS:
             val = (r.get(key) or "").strip()
             if val:
                 print(f"{label:>24} : {val}")
     print("=" * 72)
-    print(f"{len(hits)} article(s) matched.")
-    return 0
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+
+    detail = False
+    queries = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("--detail", "-v"):
+            detail = True
+        elif a in ("--file", "-f"):
+            i += 1
+            if i >= len(args):
+                print("ERROR: --file needs a path", file=sys.stderr)
+                return 2
+            path = args[i]
+            if not os.path.exists(path):
+                print(f"ERROR: file not found: {path}", file=sys.stderr)
+                return 2
+            with open(path, encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        queries.append(line)
+        else:
+            queries.append(a)
+        i += 1
+
+    if not queries:
+        print("No queries given. Try: lookup.py SS004 SS510   or   lookup.py --file ids.txt")
+        return 1
+    if not os.path.exists(CSV):
+        print(f"ERROR: dataset not found at {CSV}", file=sys.stderr)
+        return 2
+
+    with open(CSV, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    seen, hits, unmatched = set(), [], []
+    for q in queries:
+        found = find(rows, q)
+        if not found:
+            unmatched.append(q)
+            continue
+        for r in found:
+            pid = r.get("paper_id")
+            if pid not in seen:
+                seen.add(pid)
+                hits.append(r)
+
+    if hits:
+        (print_detail if detail else print_compact)(hits)
+
+    print()
+    print(f"{len(hits)} article(s) found from {len(queries)} query(ies).")
+    if unmatched:
+        print(f"{len(unmatched)} not matched: " + ", ".join(unmatched))
+        print("  (only the 413 published articles SS001–SS511 are covered; "
+              "check the DOI / URL / paper id.)")
+    return 0 if hits else 1
 
 
 if __name__ == "__main__":
