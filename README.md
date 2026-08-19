@@ -68,6 +68,7 @@ socsci-replication-availability/
     ├── check_install.py           # confirm Python + dataset are ready
     ├── lookup.py                  # look up a package by DOI/URL/id  ← start here
     ├── add_article.py             # add a new article by URL/DOI (auto-fills Block A)
+    ├── merge_new.py               # merge coded new articles into the dataset (CSV + xlsx)
     ├── reproduce_table.py         # recompute the headline numbers from the dataset
     ├── six-agent-availability.js  # main coding pipeline (Claude Code Workflow script)
     ├── gated_recheck.js           # data_gated determiner
@@ -284,10 +285,19 @@ API key (Python only). No manual data entry.
 > columns strictly per the codebook (also fill `submission_date` from the article's "Received"
 > date). Write the filled rows back to `data/new_articles.csv`.
 
-**Step 3 — use or append the results.** Look them up with `python3 pipeline/lookup.py --file …`,
-or append the coded rows to `data/socsci_availability.csv` to grow the dataset. Use the pinned
-parameters in [`docs/run_provenance.md`](docs/run_provenance.md) so new coding stays consistent
-with the existing table.
+**Step 3 — merge into the dataset (one command).** Once Block B is coded, fold the new rows into
+the main dataset. The merge adds **only coded rows**, skips duplicates (by doi / paper_id), tags
+them `batch = new`, and updates both the CSV and the `.xlsx`:
+
+```bash
+python3 pipeline/merge_new.py --dry-run    # preview what would be added — writes nothing
+python3 pipeline/merge_new.py              # merge data/new_articles.csv into the dataset
+```
+
+Then verify with `python3 pipeline/reproduce_table.py`, or look the new articles up with
+`python3 pipeline/lookup.py`. (The `.xlsx` sync needs `openpyxl`; the CSV always updates.) New
+coding uses the pinned parameters in [`docs/run_provenance.md`](docs/run_provenance.md), so it
+stays consistent with the existing table.
 
 ---
 
