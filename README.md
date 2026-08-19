@@ -65,6 +65,7 @@ socsci-replication-availability/
 │   ├── codebook.md              # coding manual — field definitions & rules
 │   └── run_provenance.md        # pinned run parameters (model, prompts, workflow)
 └── pipeline/
+    ├── check_install.py           # confirm Python + dataset are ready
     ├── lookup.py                  # look up a package by DOI/URL/id  ← start here
     ├── reproduce_table.py         # recompute the headline numbers from the dataset
     ├── six-agent-availability.js  # main coding pipeline (Claude Code Workflow script)
@@ -141,14 +142,14 @@ cd socsci-replication-availability
 (No `git`? Use the green **Code → Download ZIP** button on GitHub, unzip it, and `cd` into the
 folder.)
 
-**Step 3 — confirm it works.** Run the reproduction tool:
+**Step 3 — confirm it works.**
 
 ```bash
-python3 pipeline/reproduce_table.py
+python3 pipeline/check_install.py
 ```
 
-If you see the availability table print (ending with `submitted ON/AFTER 2023-04-01 : 113/119 =
-95.0%`), the install is good. You're done — nothing else to set up.
+You should see `Installation succeeded — … dataset loaded (413 articles).` That's it — nothing
+else to set up.
 
 ---
 
@@ -160,11 +161,13 @@ Pass a DOI, the article URL, or the paper id to `lookup.py`. It prints whether d
 were deposited and the **exact repository link**. **One or many** at once:
 
 ```bash
-# one article
-python3 pipeline/lookup.py 10.15195/v1.a2
+# one article — by URL
 python3 pipeline/lookup.py https://sociologicalscience.com/articles-v11-17-467/
 
-# several at once — mix ids, DOIs, and URLs freely
+# or by DOI
+python3 pipeline/lookup.py 10.15195/v1.a2
+
+# several at once — mix paper ids, DOIs, and URLs freely
 python3 pipeline/lookup.py SS004 SS510 SS458
 
 # a long list — one query per line in a text file (# starts a comment)
@@ -189,10 +192,10 @@ package link to download. For a **gated** paper with no open package the last co
 verification notes). Coverage is the **413 published articles (SS001–SS511)**; anything outside
 that set is listed under "not matched".
 
-### Scenario 2 — reproduce the coding yourself (independent re-coding)
+### Scenario 2 — reproduce the replication-package-availability table (independent re-coding)
 
-This reproduces the **result**: you re-run the coding method over the articles and compare your
-table to the shipped one. It is driven by [Claude Code](https://claude.com/claude-code) — the
+This rebuilds the **replication-package-availability table** yourself: you re-run the coding method
+over the articles and compare your table to the shipped one. It is driven by [Claude Code](https://claude.com/claude-code) — the
 method is an LLM-agent workflow, not a fixed script — so the output is **comparable, not
 byte-identical**: the agents make judgment calls, and re-running never returns an exact copy (see
 [`docs/run_provenance.md`](docs/run_provenance.md)). Expect many web requests and API-token cost;
@@ -248,6 +251,33 @@ python3 pipeline/reproduce_table.py
 It re-derives the overall rate, the by-year table, and the policy before/after split from the
 shipped `data/socsci_availability.csv`. (To regenerate the chart as well, `pip install matplotlib`
 first.)
+
+### Scenario 3 — code newly published articles (extend coverage)
+
+*Sociological Science* keeps publishing. To locate and code the replication package for **new**
+articles with the same workflow (also Claude Code — see [Prerequisites](#prerequisites)):
+
+**Step 1 — make a worklist for the new articles.** Create a CSV with the **same header** as
+`data/socsci_availability_blank.csv`, one row per new article. Fill only the bibliographic columns
+(`doi`, `paper_id`, `title`, `authors`, `published_date`, `submission_date`, `article_url`) and
+leave every coding column empty. `paper_id` can be any unique label (e.g. `SS512`). Save it as,
+say, `data/new_articles.csv`. (Tip: copy the header row out of the blank template to start.)
+
+**Step 2 — hand it to Claude Code.** In the repo folder run `claude`, then paste:
+
+> Read `agent.toml`, `docs/codebook.md`, and every `SKILL.md` under `skills/`. For each article in
+> `data/new_articles.csv` (bibliographic columns filled, coding columns empty), run the method
+> **Scope → Locate → Verify → Execute → Verify**: find the replication package (journal
+> supplemental tab, then the article-PDF availability statement, author homepage, then OSF /
+> Harvard Dataverse / GitHub / Zenodo), verify it belongs to these authors and reproduces this
+> paper, and fill the coding columns strictly per the codebook. Write the filled rows to
+> `data/new_articles_coded.csv`.
+
+**Step 3 — use or append the results.** Look them up with
+`python3 pipeline/lookup.py --file <your ids>`, or append the coded rows to
+`data/socsci_availability.csv` to grow the dataset. Use the pinned parameters in
+[`docs/run_provenance.md`](docs/run_provenance.md) so new coding stays consistent with the existing
+table.
 
 ---
 
