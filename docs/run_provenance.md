@@ -11,7 +11,8 @@ recording the change here.
 | **Prompt version — scope/data/code** | `socsci-avail-prompt-v3.0-2026-08-14` | `PROMPT_VERSION` in the main pipeline script. Produces `in_scope`/`qualitative`/`data`/`code`/`submission_date`. Unchanged since v3.0 — the v3.1/v3.2 refinements were to `data_gated` only, which is now a separate pass (below). |
 | **Prompt version — data_gated/apply_at** | `socsci-gated-recheck-v3.2-2026-08-18` | `PROMPT_VERSION` in the gated-determiner script `scratchpad/gated_recheck.js`. Produces the FINAL `data_gated` + `data_source_apply_at` for every in-scope paper. Aligned to `codebook.md` **v3.2**. |
 | **Codebook** | **v3.2** (`codebook.md`) | The whole coding rubric. Final `data_gated` values in all deliverables come from the v3.2 determiner. |
-| **Temperature** | **platform default — NOT independently set** | The Workflow harness does **not** expose a temperature parameter to the script, and none is recorded in any run log. See the note below. |
+| **Temperature — pinned protocol value** | **`temperature = 0`** | The value every run of this protocol MUST use (future ASR adapter, any re-run). See the constraint note below for how it is enforced today vs. going forward. |
+| **Temperature — actually used for the current 413-article dataset** | **platform default (NOT `0`)** | The Workflow harness does **not** expose a temperature parameter, so the existing dataset was produced at the platform default, not at the pinned value. None is recorded in any run log. See the note below. |
 
 ## Coding is a two-component process (both prompts frozen)
 
@@ -34,14 +35,27 @@ Editing either prompt requires bumping its `PROMPT_VERSION` and adding a changel
 
 ## Temperature — important constraint
 
-Temperature is **not a knob** in the current Workflow-based pipeline: the harness that spawns
-the sub-agents does not accept a temperature argument, so it cannot be hardcoded within this
-architecture. All runs use the **platform default**. This is recorded, not chosen.
+**The protocol pins `temperature = 0`, but this is a specification, not a description of how the
+current dataset was produced.** The two must be read separately:
 
-To pin temperature to a specific value (e.g. `0`) the pipeline would have to be re-implemented
-directly on the Anthropic Messages API/SDK (where `temperature` is a request parameter). That
-is a larger change and is **deferred** (it overlaps the future infrastructure work, task #4/#5).
-Decision on record (2026-08-14): stay on the current architecture; document the default.
+- **Pinned protocol value = `0`.** Every run of this coding protocol is *required* to use
+  `temperature = 0`, to minimise sampling randomness and maximise reproducibility. This is the
+  standard the ASR adapter and any re-run must meet.
+- **Actually used for the current 413-article SocSci dataset = platform default (NOT `0`).**
+  Temperature is **not a knob** in the current Workflow-based pipeline: the harness that spawns
+  the sub-agents does not accept a temperature argument, so `0` could not be enforced within this
+  architecture. The existing dataset therefore ran at the platform default. This is recorded, not
+  chosen — **do not read the pinned `0` as the value that produced these numbers.**
+
+To actually *enforce* `temperature = 0`, the pipeline must be re-implemented directly on the
+Anthropic Messages API/SDK (where `temperature` is a request parameter). That is a larger change
+and is **deferred**; when done, this note should be updated to state that the data was produced at
+`0`. Note that even `temperature = 0` does not guarantee byte-identical LLM outputs (floating-point
+/ batching / routing non-determinism) — it minimises, not eliminates, run-to-run variation.
+
+Decisions on record: (2026-08-14) stay on the current architecture and document the default;
+(2026-08-19) pin `temperature = 0` as the protocol value going forward, while keeping the honest
+record that the current dataset used the platform default.
 
 ## Prompt changelog
 
