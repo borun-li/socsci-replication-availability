@@ -49,7 +49,13 @@ Whole-corpus availability is 176 / 397 = 44.3% (held down by the pre-policy deca
 socsci-replication-availability/
 ├── README.md
 ├── LICENSE                      # MIT (code) + CC BY 4.0 (data)
-├── agent.toml                   # the six-agent specification
+├── agent.toml                   # the six-agent specification (references skills/)
+├── skills/                      # source-based search skills the agents load
+│   ├── osf-repository/ · data-repository/ · github-repository-and-pages/
+│   ├── journal-reproducibility-package/ · article-pdf-availability-statement/
+│   ├── author-homepage/ · project-or-lab-site/ · google-scholar-profile/
+│   ├── calibration-honesty/               # honesty/uncertainty discipline
+│   └── _verdict/                          # the coding verdicts (both-available, data-only, …)
 ├── data/
 │   ├── socsci_all_v3.xlsx       # the full dataset (413 rows)
 │   ├── socsci_all_v3.csv        # same, CSV

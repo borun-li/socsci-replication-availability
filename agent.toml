@@ -24,7 +24,7 @@ goal        = "For each article, decide if it is in scope, then find & verify wh
 [agent.io]
 articles    = "artifacts/input/Borun_batch_2.xlsx"          # input + output table (sheet "Borun")
 codebook    = "artifacts/input/Borun_batch_2.xlsx"          # sheet "how_to_code" is authoritative
-skills_dir  = "artifacts/skills/"
+skills_dir  = "skills/"
 scratch_dir = "artifacts/output/package_avai/_scratch/"
 
 # Binding codebook rules (from the how_to_code sheet — authoritative):
