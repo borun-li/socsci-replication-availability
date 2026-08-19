@@ -28,7 +28,7 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, os.pardir, "data")
 DATASET = os.path.join(DATA, "socsci_availability.csv")
-UA = {"User-Agent": "socsci-availability/1.0 (mailto:borun.li@icloud.com)"}
+UA = {"User-Agent": "socsci-availability/1.0 (mailto:liborun0811@gmail.com)"}
 
 BLOCK_A = ["doi", "paper_id", "title", "authors", "published_date", "submission_date", "article_url"]
 BLOCK_B = ["in_scope", "qualitative", "data", "code", "data_and_code", "neither", "data_gated",

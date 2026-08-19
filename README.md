@@ -363,4 +363,8 @@ published articles, or extensions to other journals. Please:
 
 ## Contact
 
-Borun Li — borun.li@icloud.com
+Borun Li — liborun0811@gmail.com
+
+For questions, corrections, or contributions, the quickest way to reach me is directly on
+GitHub — open an [issue](https://github.com/borun-li/socsci-replication-availability/issues) or a
+discussion in this repository.

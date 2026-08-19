@@ -22,7 +22,7 @@ def crossref_doi(title):
     if title in _doi_cache: return _doi_cache[title]
     q=urllib.parse.urlencode({'query.bibliographic':title,'rows':5})
     req=urllib.request.Request(f"https://api.crossref.org/works?{q}",
-        headers={'User-Agent':'socsci-availability/1.0 (mailto:borun.li@icloud.com)'})
+        headers={'User-Agent':'socsci-availability/1.0 (mailto:liborun0811@gmail.com)'})
     doi=''
     try:
         d=json.load(urllib.request.urlopen(req,timeout=25))
