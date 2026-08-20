@@ -1,35 +1,40 @@
-# Replication-Package Availability Codebook (Sociological Science)
-Version 3.2 · 2026-08-18
+# Replication-Package Availability Codebook (shared)
+Version 3.3 · shared across *Sociological Science* and *American Sociological Review*
 
-*Changelog — v3.2:* clarified `data_gated` — `Y` whenever the underlying analysis data is **not
+*Changelog — v3.3:* clarified `data` — the test is whether the authors **physically deposited the
+analysis data files in the package**, NOT whether the data originated from a public source. Public
+data that the authors **settle into the package** counts as a deposit (`data = Y`); a bare
+**pointer/link** to an external source the user must download themselves is not (`data = N`). A
+restricted portion of the underlying data → `data_gated = Y`, and does not flip `data` to `N` when
+the authors physically deposited (part of) the analysis data. Added a worked example (§2). Also:
+`data_gated = Y` **must be explained in `notes`** (the basis for the gate).
+
+This codebook defines how each article is coded for **data and code availability**. It is
+**journal-neutral**: the coding definitions (Block B) are IDENTICAL across journals, so take-up
+rates are comparable. *Where* materials are found (the Data Availability Statement, the article
+PDF, a repository host) is journal-specific and lives in that journal's `agent.toml` + `skills/`,
+**never here.**
+
+Column names below are the **canonical** (snake_case) names used by the pipeline, the CSV export,
+and the archive. An Excel presentation copy may use display headers, but the canonical names
+govern.
+
+*Changelog — v3.2:* `data_gated` = `Y` whenever the underlying analysis data is **not
 freely/publicly available** (restricted / confidential / proprietary / institutional-access /
 register / IRB / author-collected human-subjects), **even if there is no external application
-route**; when no route exists, `data_source_apply_at` **explains why** (e.g. discretionary/
-institutional access only). `N` only when the data is **genuinely public** (open archives /
-open deposits) or the authors' own **simulation** outputs. The earlier "mere non-provision"
-exclusion applies **only** when the underlying source is itself public (a public dataset the
-authors simply did not re-post) — not to inherently restricted data.
-
-*Changelog — v3.1:* introduced the special-application framing for `data_gated`
-(application/DUA/RDC, paid license, available-on-request email, registration portal).
-Superseded by v3.2 for the no-route restricted case.
-
-This document defines how each *Sociological Science* article is coded for **data and code
-availability**, and the column structure of the result workbook. It is the authoritative
-reference for `Borun_batch_3_result.xlsx`.
-
-Column names below are the **canonical** (snake_case) names used in the pipeline, the CSV
-export, and the archive. An Excel presentation copy may use display headers, but the canonical
-names govern.
+route**; when no route exists, `data_source_apply_at` **explains why**. `N` only when the data is
+**genuinely public** (open archives / open deposits) or the authors' own **simulation** outputs.
+*Mere non-provision* → `N` applies **only** when the underlying source is itself public.
+*v3.1:* introduced the special-application framing (application/DUA/RDC, paid license,
+available-on-request, registration portal); superseded by v3.2 for the no-route restricted case.
 
 ---
 
 ## 1. Schema
 
-The schema has two blocks. **Block A** (bibliographic identifiers) is journal-specific.
-**Block B** (availability coding) is IDENTICAL across all journals — column names, order,
-allowed values, and definitions. Cross-journal comparison of take-up rates depends on
-Block B never diverging.
+Two blocks. **Block A** (bibliographic identifiers) is journal-specific. **Block B** (availability
+coding) is IDENTICAL across all journals — names, order, allowed values, definitions.
+Cross-journal comparison depends on Block B never diverging.
 
 ### Block A — bibliographic (journal-specific)
 
@@ -39,15 +44,17 @@ Block B never diverging.
 | 2 | `paper_id` | ✔ | — | SocSci internal ID (e.g. SS287) |
 | 3 | `title` | ✔ | ✔ | |
 | 4 | `authors` | ✔ | ✔ | |
-| 5 | `published_date` | ✔ | ✔ | ASR: `published-online` from Crossref |
-| 6 | `submission_date` | ✔ | — | grandfathering only; ASR has no policy date |
-| 7 | `article_url` | ✔ | ✔ | ASR: `resource.primary.URL` |
-| 8 | `volume` | — | ✔ | |
-| 9 | `issue` | — | ✔ | |
-| 10 | `accessibility` | — | ✔ | Open / Free / Restricted Access |
+| 5 | `published_date` | ✔ | ✔ | ASR: `published-online` |
+| 6 | `submission_date` | ✔ | — | **SocSci-only** — policy grandfathering; ASR has no policy date |
+| 7 | `article_url` | ✔ | ✔ | |
+| 8 | `volume` | — | ✔ | ASR |
+| 9 | `issue` | — | ✔ | ASR |
+| 10 | `accessibility` | — | ✔ | ASR — Open / Free / Restricted Access |
 
 A column absent for a journal is omitted from that journal's workbook, never filled with a
-placeholder. In the merged archive, absent columns are blank.
+placeholder. **`accessibility` is an analysis dimension, NEVER an inclusion filter** — a
+Restricted-Access article is coded and counted exactly like an Open-Access one (the denominator is
+in-scope empirical articles, access-agnostic; see `in_scope`).
 
 ### Block B — availability coding (identical across journals)
 
@@ -66,136 +73,141 @@ placeholder. In the merged archive, absent columns are blank.
 | 11 | `coverage_checked` | coder | where you looked |
 | 12 | `notes` | coder | **required on every row** |
 
-§2–§5 define Block B and apply unchanged to every journal. Journal-specific extraction
-(where the DAS lives, how the PDF is laid out) belongs in that journal's pipeline
-instructions, never in this codebook.
+§2–§4 define Block B and apply unchanged to every journal.
 
 ---
 
-## 2. Codebook — field definitions
-
-- **`submission_date`** — If the paper prints a "received"/"submitted" date (footnote or
-  masthead), record it. This decides **grandfathering**: submitted **on or after 2023-04-01**
-  (boundary inclusive) = policy-required deposit. No separate column records this; the date
-  itself draws the line.
+## 2. Codebook — field definitions (Block B, journal-neutral)
 
 - **`in_scope`**
-  - `Y` = reports original empirical analysis the authors ran. A qualitative **empirical**
-    paper *is* in scope (`Y`, with `qualitative = Y`).
+  - `Y` = reports original empirical analysis the authors ran. A qualitative **empirical** paper
+    *is* in scope (`Y`, with `qualitative = Y`).
   - `NA` = nothing to reproduce — commentary, rejoinder, editorial, or purely theoretical.
   - `?` = does not fit. **Flag the entire row for human review** and say why in `notes`.
-    Denominator inclusion is decided after review, by the resolved `in_scope` value.
+  - **The denominator is in-scope empirical articles, regardless of article access.** Do not
+    exclude an article because it is paywalled/Restricted — access does not affect inclusion.
   - If `in_scope = NA`, leave `qualitative` / `data` / `code` / `data_gated` **blank**.
 
 - **`qualitative`** — `Y` if primary evidence is non-numeric (interviews, ethnography,
   archival/textual), interpreted directly rather than converted into variables. Papers using
   **both** qual and quant = quantitative (`N`).
 
-- **`data`** — `Y` = the authors **deposited their analysis dataset in the package**. A pointer
-  to an external source is never a deposit — this includes public archives (ICPSR, IPUMS, GSS,
-  NLSY, NBER). If the dataset is not in the package, `data = N`.
+- **`data`** — `Y` = the authors **physically deposited the analysis data files in the package**.
+  The test is **deposit vs. pointer**, not public vs. private:
+  - **Deposited (→ `Y`)** — the data files are actually in the package (uploaded to OSF /
+    Dataverse / OpenICPSR / GitHub / a supplement). This holds **even when the data came from a
+    public source**: if the authors settled those files into the package, they built a replication
+    package. A restricted portion of the underlying data still leaves `data = Y` (with
+    `data_gated = Y`) as long as the authors physically deposited (part of) the analysis data.
+  - **Pointer only (→ `N`)** — the package merely **links to / cites** an external source the user
+    must download themselves (a public archive such as ICPSR / IPUMS / GSS / NLSY / PSID, or a
+    "the data are available at …" link). A citation or link is not a deposit.
+  - **Nothing deposited (→ `N`)** — no analysis data files are in the package (code-only deposit),
+    or there is no package at all.
 
 - **`code`** — `Y` = the authors **deposited code that reproduces THIS paper's results**. A
   general method/software package (even one the authors wrote) is a **tool**, not a package,
-  unless it bundles the paper's own analysis scripts. See SS091, SS131.
+  unless it bundles the paper's own analysis scripts.
 
-- **`data_and_code` / `neither`** — Generated by pipeline code, never by an agent. Rules:
+- **`data_and_code` / `neither`** — Generated by pipeline code, never by an agent:
   - `data_and_code` = `Y` if `data = Y` **and** `code = Y`, else `N`
   - `neither` = `Y` if `data = N` **and** `code = N`, else `N`
   - Both blank whenever `data` / `code` are blank.
 
-- **`data_gated`** — `Y` whenever the underlying analysis data is **not freely/publicly
-  available** — restricted, confidential, proprietary, institutional-access-only, a
-  register/administrative source, IRB-protected, or author-collected human-subjects data —
-  **regardless of whether an external application route exists**. When there **is** a route,
-  record it in `data_source_apply_at`; when there is **no** external route, still code `Y` and
-  use `data_source_apply_at` to **explain why** (e.g. discretionary or institutional access
-  granted only to the authors). `N` only when the data is **genuinely public** (freely
-  downloadable open archives / open deposits) or the authors' own **simulation** outputs.
-  *Mere non-provision* → `N` applies **only** when the underlying source is itself public (a
-  public dataset the authors simply did not re-post), never to inherently restricted data.
-  Blank if `in_scope = NA`.
+- **`data_gated`** — `Y` whenever the underlying analysis data is **not freely/publicly available**
+  — restricted, confidential, proprietary, institutional-access-only, a register/administrative
+  source, IRB-protected, or author-collected human-subjects data — **regardless of whether an
+  external application route exists**. When there **is** a route, record it in
+  `data_source_apply_at`; when there is **no** external route, still code `Y` and use
+  `data_source_apply_at` to **explain why** (discretionary/institutional access to the authors
+  only). `N` only when the data is **genuinely public** (freely downloadable open archives / open
+  deposits) or the authors' own **simulation** outputs. *Mere non-provision* → `N` only when the
+  underlying source is itself public (a public dataset simply not re-posted), never for inherently
+  restricted data. Blank if `in_scope = NA`.
+  **Whenever `data_gated = Y`, `notes` must state the basis for the gate** (which source is
+  restricted and why — e.g. "confidential IRB interview data, no deposit"; "proprietary vendor
+  panel, no public route"; "restricted register, apply via <RDC>"), including when the gate is
+  inferred from the data's inherent nature (ethnographic/interview data) rather than an explicit
+  author statement.
 
-- **`data_source_apply_at`** — Where the gated data lives and how to apply for it.
+- **`data_source_apply_at`** — when `data_gated = Y`, name the restricted **source** AND the
+  concrete **apply-at** (provider + URL/agreement/email). A concrete route is required — `contact
+  author` alone is not acceptable; use the author's actual email from the article. Blank when
+  `data_gated = N`.
 
 - **`package_location`** — URL or file where the materials actually live.
-
-- **`path_to_package`** — How you got there: e.g. `supplement note -> author homepage -> osf.io/xxxx`.
-
-- **`coverage_checked`** — Where you looked: e.g. `tab + PDF + author search + Wayback`.
-
+- **`path_to_package`** — how you got there, e.g. `data availability statement -> openicpsr project`.
+- **`coverage_checked`** — where you looked, e.g. `DAS + PDF + OpenICPSR search + author page`.
 - **`notes`** — **REQUIRED ON EVERY ROW.** What you opened and what was inside it.
 
 ### "Available upon request" vs. mere non-provision
 
 The distinction turns on whether a **real access route** exists:
+- Data **available on request** (a real mechanism — email the author/provider, or apply through a
+  named body): `data = N`, `data_gated = Y`, `data_source_apply_at` = a **concrete** route.
+- Authors **did not deposit** and state **no** route:
+  - underlying data **inherently restricted** (confidential interviews, proprietary, institutional,
+    register): `data = N`, `data_gated = Y`; `data_source_apply_at` explains why no route exists;
+  - underlying source **itself public** (used public data, did not re-post the extract): `data = N`,
+    `data_gated = N` — the only *mere non-provision* case. (Publicly posted replication *code* does
+    not change the data status.)
 
-- The article states the data is **available on request** (an actual request mechanism — email
-  the author/provider, or apply through a named body): `data = N`, `data_gated = Y`,
-  `data_source_apply_at` = a **concrete** route (a URL or an email address; `contact author`
-  alone is not acceptable).
-- The authors **did not deposit** the data and state **no** access route:
-  - if the underlying data is **inherently restricted** (confidential interviews, proprietary,
-    institutional, register): `data = N`, `data_gated = Y`, and `data_source_apply_at`
-    explains why no external route exists;
-  - if the underlying source is **itself public** (they used public data and simply did not
-    re-post their extract): `data = N`, `data_gated = N` — this is the only *mere
-    non-provision* case. (Publicly posted replication *code* does not change the data status.)
+### Worked example — public *source* vs. public data *deposited into the package*
+
+The same public dataset can produce `data = Y` or `data = N` depending on whether the authors
+**physically deposited it** or merely **pointed to it**:
+
+- **Pointer → `data = N`.** A package whose README says *"our analyses use public-use NSFH, GSS,
+  and PSID; download them from the archives and run our code"* and deposits only the `.do`/`.R`
+  scripts (no data files). The public data is a **source the user fetches themselves** — not a
+  deposit. `data = N`, `data_gated = N` (the source is public), `code = Y`.
+- **Deposited → `data = Y`.** A package that **physically includes** the public state/ZIP-level
+  data files it uses (e.g. BEA price parities, ACS ZCTA extracts, policy tables uploaded as `.dta`
+  into the repo), even though those come from public sources. The authors settled the data into a
+  replication package → `data = Y`. If a *further* portion of the underlying data is proprietary
+  and absent (e.g. an individual-level credit-bureau panel the authors cannot share), that portion
+  is flagged `data_gated = Y` — it does **not** turn `data` back to `N`. (This is the ASR
+  "Unsecured Credit" case; the counterpart pointer case is "Schwartz & King".)
+
+The dividing line is always **"is the data file in the package?"** — not where the data came from.
 
 ---
 
 ## 3. The one rule
 
-> A **Y** means the authors' materials reproduce **THIS** paper. Not a relevant link, not a
-> tool they used, not a preprint, not a public data source. When your note describes why
-> something is **NOT** the package, code it **N**. **Do not code past your own note.**
+> A **Y** means the authors' materials reproduce **THIS** paper. Not a relevant link, not a tool
+> they used, not a preprint, not a public data source. When your note describes why something is
+> **NOT** the package, code it **N**. **Do not code past your own note.**
+
+A package located through a non-standard channel (author homepage, repository search, dataset-DOI
+relation metadata) counts the same as one linked from the availability statement — **provided it
+passes provenance** (belongs to these authors, reproduces this paper). Record how it was found in
+`coverage_checked` / `notes`.
 
 ---
 
-## 4. Batch-3 changes (vs Batch 2)
+## 4. Execution-layer definitions for the gated-data fields
 
-1. **New `submission_date` column** — extracted from the article's **PROCESS INFO** tab
-   (Received date); if there is no such tab, from the Received/Submitted line on the PDF's
-   first page. This is the responsibility of Agent 2 (Scope) in the pipeline.
+Operationalization set by the **Execute** agent, independently checked by **Exec-Verify**.
 
----
-
-## 5. Execution-layer definitions for the gated-data fields
-
-Operationalization used by the coding pipeline — set by the **Execute** agent, independently
-checked by the **Exec-Verify** agent.
-
-- **`data_gated = Y`** when obtaining the underlying analysis data requires a **special
-  application / access route** — a concrete, identifiable mechanism requiring a request or
-  permission:
-  - a formal application / registration / Data Use Agreement / research data center
-    (e.g. GSOEP→DIW, NSFG→NCHS RDC, Add Health DUA, a national register via SCB/MONA, IRS/SSA
-    restricted files);
-  - a paid **license / purchase** from a commercial vendor (e.g. RealtyTrac/ATTOM,
-    ThomsonONE/Refinitiv, College Board ASC);
-  - an explicit **available-on-request** route (email the author / PI / provider);
-  - a **portal / website** you must apply to or register with to download.
-
-  This holds **even if** the code (and sometimes derived data) is deposited, and applies when
-  `data = N` because the source itself is access-restricted.
-
-  It also holds when the data is restricted but has **no external route** (discretionary or
-  institutional access granted only to the authors, ad-hoc data sharing, or unnamed
-  proprietary sources) — still `Y`, with `data_source_apply_at` explaining why no route exists.
+- **`data_gated = Y`** when obtaining the underlying analysis data requires a **special application
+  / access route** — a formal application / registration / Data Use Agreement / research data
+  center; a paid **license / purchase** from a commercial vendor; an explicit
+  **available-on-request** route; or a **portal** you must apply to or register with — OR when the
+  data is restricted but has **no external route** (discretionary/institutional access to the
+  authors only). Holds **even if** the code (and sometimes derived data) is deposited.
 
   **`N`** only when the data is genuinely public / freely downloadable (public
-  IPUMS/GSS/ANES/ACS-PUMS/NLSY, open archives, **open Harvard Dataverse/OSF deposits**, open
-  web data), or when the analysis data are the authors' own simulation outputs. *Mere
-  non-provision* → `N` applies only when the underlying source is itself public (a public
-  dataset not re-posted), not to inherently restricted data.
+  IPUMS/GSS/ANES/ACS-PUMS/NLSY, open archives, **open Dataverse/OSF/OpenICPSR deposits**, open web
+  data), or the analysis data are the authors' own simulation outputs.
 
-- **`data_source_apply_at`** — when `data_gated = Y`, name the restricted **source** AND the
-  concrete **apply-at** (provider + URL/agreement/email). Examples:
+- **`data_source_apply_at` — cross-journal examples** (illustrative; name source + concrete route):
+  - `PSID — restricted files via the PSID Virtual Data Enclave (psidonline.isr.umich.edu)`
+  - `Census / administrative microdata — FSRDC application (census.gov/fsrdc)`
+  - `Add Health — restricted-use DUA, Carolina Population Center, UNC (addhealth.cpc.unc.edu)`
   - `SOEP Core — data-access agreement, DIW Berlin (diw.de)`
-  - `Swedish registers — Statistics Sweden / SCB MONA microdata service (scb.se)`
-  - `Add Health — restricted-use DUA, Carolina Population Center, UNC-Chapel Hill (addhealth.cpc.unc.edu)`
+  - `proprietary vendor panel (e.g. consumer-credit/marketing data) — commercial license, no public route`
   - `confidential interviews — corresponding author, <email address from the article>`
-  - Blank when `data_gated = N`.
 
 - **Gated but declared packages** — the located package still counts; record the apply-at and
   **never** sign, register, log in, or solve a CAPTCHA to obtain the data.
