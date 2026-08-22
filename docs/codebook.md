@@ -49,12 +49,11 @@ Cross-journal comparison depends on Block B never diverging.
 | 7 | `article_url` | ✔ | ✔ | |
 | 8 | `volume` | — | ✔ | ASR |
 | 9 | `issue` | — | ✔ | ASR |
-| 10 | `accessibility` | — | ✔ | ASR — Open / Free / Restricted Access |
 
 A column absent for a journal is omitted from that journal's workbook, never filled with a
-placeholder. **`accessibility` is an analysis dimension, NEVER an inclusion filter** — a
-Restricted-Access article is coded and counted exactly like an Open-Access one (the denominator is
-in-scope empirical articles, access-agnostic; see `in_scope`).
+placeholder. **Article access (paywalled vs. open) is NOT recorded and NEVER an inclusion filter** —
+a paywalled article is coded and counted exactly like an open one (the DAS is public regardless of
+the paywall; the denominator is in-scope empirical articles, access-agnostic; see `in_scope`).
 
 ### Block B — availability coding (identical across journals)
 
@@ -124,11 +123,20 @@ in-scope empirical articles, access-agnostic; see `in_scope`).
   deposits) or the authors' own **simulation** outputs. *Mere non-provision* → `N` only when the
   underlying source is itself public (a public dataset simply not re-posted), never for inherently
   restricted data. Blank if `in_scope = NA`.
+  **`data_gated` applies to QUANTITATIVE papers only — leave it BLANK (N/A) when `qualitative = Y`.**
+  Data-gating is a *reproduction-from-data* question, which is a quantitative frame; a qualitative
+  study is not reproduced from its data, so the gate does not apply (the `qualitative = Y` flag
+  already carries why). Assess `data_gated` (and `data_source_apply_at`) only for `qualitative = N`.
   **Whenever `data_gated = Y`, `notes` must state the basis for the gate** (which source is
   restricted and why — e.g. "confidential IRB interview data, no deposit"; "proprietary vendor
   panel, no public route"; "restricted register, apply via <RDC>"), including when the gate is
   inferred from the data's inherent nature (ethnographic/interview data) rather than an explicit
   author statement.
+  **A login on the hosting platform is NOT a gate.** Merely needing a free account to download an
+  openly-deposited package from its host (OSF, Harvard Dataverse, OpenICPSR, Zenodo, GitHub) does
+  **not** set `data_gated = Y`. A gate concerns the underlying **data** being restricted (a real
+  application / DUA / approval / license / restricted register) — not the repository's ordinary
+  sign-in. Openly downloadable to any registered platform user → `data_gated = N`.
 
 - **`data_source_apply_at`** — when `data_gated = Y`, name the restricted **source** AND the
   concrete **apply-at** (provider + URL/agreement/email). A concrete route is required — `contact
@@ -166,8 +174,10 @@ The same public dataset can produce `data = Y` or `data = N` depending on whethe
   into the repo), even though those come from public sources. The authors settled the data into a
   replication package → `data = Y`. If a *further* portion of the underlying data is proprietary
   and absent (e.g. an individual-level credit-bureau panel the authors cannot share), that portion
-  is flagged `data_gated = Y` — it does **not** turn `data` back to `N`. (This is the ASR
-  "Unsecured Credit" case; the counterpart pointer case is "Schwartz & King".)
+  is flagged `data_gated = Y` — it does **not** turn `data` back to `N`. (ASR "Unsecured Credit".
+  Likewise ASR "Schwartz & King" = `Y`: the authors deposited their occupation→prestige crosswalks
+  and derived analysis tables into the OSF package, though the raw NSFH/GSS/PSID microdata is a
+  pointer.)
 
 The dividing line is always **"is the data file in the package?"** — not where the data came from.
 
@@ -191,11 +201,12 @@ passes provenance** (belongs to these authors, reproduces this paper). Record ho
 Operationalization set by the **Execute** agent, independently checked by **Exec-Verify**.
 
 - **`data_gated = Y`** when obtaining the underlying analysis data requires a **special application
-  / access route** — a formal application / registration / Data Use Agreement / research data
-  center; a paid **license / purchase** from a commercial vendor; an explicit
-  **available-on-request** route; or a **portal** you must apply to or register with — OR when the
-  data is restricted but has **no external route** (discretionary/institutional access to the
-  authors only). Holds **even if** the code (and sometimes derived data) is deposited.
+  / access route** — a formal application / **restricted-access** registration (an approval/DUA, not
+  a free platform sign-in) / Data Use Agreement / research data center; a paid **license / purchase**
+  from a commercial vendor; an explicit **available-on-request** route; or a **restricted portal**
+  you must apply to — OR when the data is restricted but has **no external route**
+  (discretionary/institutional access to the authors only). Holds **even if** the code (and
+  sometimes derived data) is deposited.
 
   **`N`** only when the data is genuinely public / freely downloadable (public
   IPUMS/GSS/ANES/ACS-PUMS/NLSY, open archives, **open Dataverse/OSF/OpenICPSR deposits**, open web
